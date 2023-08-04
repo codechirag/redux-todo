@@ -1,64 +1,70 @@
 import React, { useState } from 'react';
 import './App.css';
+import { useDispatch, useSelector } from 'react-redux';
+import { addItem } from './redux/actions';
+import ShowList from './showList/showList'
+
 
 function App() {
   type todoType = {
     id: number;
-    task: string | null;
+    task: string;
     status: boolean;
   }
-  const [text, setText] = useState<any>('');
-  const [todoData, setTodoData] = useState<todoType[]>([]);
-  const [edit, setEdit] = useState<{ currentId: todoType | null, status: boolean }>();
-  const addItem = () => {
-    setTodoData([...todoData, { id: Date.now(), task: text, status: false }]);
-    setText('');
+  const [inputText, setInputText] = useState<string>('');
+  // const [text, setText] = useState<todoType[]>([]);
+  const [edit, setEdit] = useState({ status: false, currentId: null });
+  const dispatch = useDispatch();
+  const select = useSelector((state: any) => state.todoItems.todoData);
+  const submitData = () => {
+    // setText([...select, { id: Number(Date.now()), task: inputText, status: false }]);
+    dispatch(addItem([...select, { id: Number(Date.now()), task: inputText, status: false }]));
+    setInputText('');
   }
-  const markDone = (value: todoType) => {
-    const newTodo = todoData.map((obj) => {
-      if (obj.id === value.id) {
-        return { ...obj, status: !value.status }
+  const checkedChange = (currentId: any) => {
+    const newTodo = select.map((obj: todoType) => { 
+      if (obj.id === currentId) {
+        return { ...obj, status: !obj.status }
       }
       else return obj;
     });
-    setTodoData(newTodo);
-  }
-  const editItem = (e: todoType) => {
-    todoData.map((obj: todoType) => {
-      if (obj.id === e.id) {
-        setText(obj.task);
-        setEdit({ currentId: e, status: true });
+    // setText(newTodo);
+    dispatch(addItem(newTodo));
+  };
+  const editItem = (currentId: any) => {
+    select.map((obj: todoType) => {
+      if (obj.id === currentId) {
+        setInputText(obj.task);
       }
     });
+    setEdit({status: true, currentId: currentId});
   }
-  const deleteItem = (value: todoType) => {
-    setTodoData(todoData.filter((obj: todoType) => obj.id !== value.id));
+  const deleteItem = (currentId: any) => {
+    // setText(text.filter((obj: any) => currentId !== obj.id ));
+    dispatch(addItem(select.filter((obj: any) => currentId !== obj.id)));
   }
-  const updateItem = () => {
-    const newTodo = todoData.map((obj: todoType) => {
-      if (obj.id === edit?.currentId?.id) {
-        return { ...obj, task: text, status: false }
+  const updateItem = () => { 
+    const newTodo = select.map((obj: todoType) => {
+      if (obj.id === edit.currentId) {
+        return { ...obj, task: inputText, status: false }
       }
       else return obj;
     });
-    setTodoData(newTodo);
-    setEdit({ currentId: null, status: false });
+    // setText(newTodo);
+    setInputText('');
+    setEdit({ status: false, currentId: null });
+    dispatch(addItem(newTodo));
   }
   return (
     <div className="App" style={{ marginTop: '30px', textAlign: 'center' }}>
-      <input type='text' onChange={(e) => setText(e.target.value)} value={text} />
-      {edit?.status ? <button onClick={updateItem}>Update</button> : <button onClick={addItem}>Add</button>}
-      <div className='dataWrapper' style={{ maxWidth: '500px', margin: '40px auto 0' }}>
-        <h2>Todo List</h2>
-        {todoData.map((value) => {
-          return (
-            <div className={`todo-task ${value.status ? 'strike' : ''}`} style={{ display: 'flex', gap: '10px', justifyContent: 'flex-start' }} key={value.id}><input type='checkbox' onChange={() => markDone(value)} /><span>{value.task}</span>
-              <button onClick={() => editItem(value)}>Edit</button>
-              <button onClick={() => deleteItem(value)}>Delete</button></div>
-          )
-        })}
-      </div>
+      <input type='text'
+        value={inputText}
+        onChange={(e)=>setInputText(e.target.value)}
+      />
+      {edit.status ? <button onClick={updateItem} >Update</button> : <button onClick={submitData} >Add</button>}
+      {<ShowList update={checkedChange} edit={editItem} deleteItem={deleteItem} /> }
     </div>
+    
   );
 }
 
